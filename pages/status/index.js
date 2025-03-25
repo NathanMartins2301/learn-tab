@@ -10,8 +10,8 @@ export default function StatusPage() {
   return (
     <>
       <h1>Status</h1>
-      <DatabaseInfo />
       <Updatedat />
+      <DatabaseStatusInfo />
     </>
   );
 }
@@ -30,15 +30,15 @@ function Updatedat() {
   return <div>Última atualização: {updatedAtText}</div>;
 }
 
-function DatabaseInfo() {
+function DatabaseStatusInfo() {
   const { isLoading, data } = useSWR("/api/v1/status", fetchAPI, {
     refreshInterval: 10000,
   });
 
-  let databaseInfo = "Carregando...";
+  let responseDatabaseStatusInfo = "Carregando...";
 
   if (!isLoading && data) {
-    databaseInfo = (
+    responseDatabaseStatusInfo = (
       <>
         <h2>Database</h2>
         <pre>{JSON.stringify(data.dependecies.database, null, 2)}</pre>
@@ -46,5 +46,5 @@ function DatabaseInfo() {
     );
   }
 
-  return <div>{databaseInfo}</div>;
+  return <div>{responseDatabaseStatusInfo}</div>;
 }
