@@ -15,6 +15,7 @@ describe("POST /api/v1/migrations", () => {
             method: "POST",
           },
         );
+
         expect(response.status).toBe(201);
 
         const responseBody = await response.json();
