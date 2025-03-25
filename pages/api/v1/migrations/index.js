@@ -1,49 +1,46 @@
+import { createRouter } from "next-connect";
 import migrationRunner from "node-pg-migrate";
 import { resolve } from "node:path";
 import database from "infra/database";
-import { createRouter } from "next-connect";
 import controller from "infra/controller";
 
 const router = createRouter();
 
+router.get(getHandler);
+router.post(postHandler);
+
 export default router.handler(controller.errorHandlers);
 
-router.use(connectDB).get(getHandler);
-router.use(connectDB).post(postHandler);
-
-async function connectDB(req, res, next) {
-  try {
-    req.dbClient = await database.getNewClient();
-    req.defaultMigrationOptions = {
-      dbClient: req.dbClient,
-      dryRun: true,
-      dir: resolve("infra", "migrations"),
-      direction: "up",
-      verbose: true,
-      migrationsTable: "pgmigrations",
-    };
-    next();
-  } catch (error) {
-    console.error(error);
-    throw error;
-  }
-}
+const defaultMigrationOptions = {
+  dryRun: true,
+  dir: resolve("infra", "migrations"),
+  direction: "up",
+  verbose: true,
+  migrationsTable: "pgmigrations",
+};
 
 async function getHandler(req, res) {
+  let dbClient;
   try {
-    const pendingMigrations = await migrationRunner(
-      req.defaultMigrationOptions,
-    );
+    dbClient = await database.getNewClient();
+
+    const pendingMigrations = await migrationRunner({
+      ...defaultMigrationOptions,
+      dbClient,
+    });
     return res.status(200).json(pendingMigrations);
   } finally {
-    req.dbClient?.end();
+    await dbClient?.end();
   }
 }
 
 async function postHandler(req, res) {
+  let dbClient;
   try {
+    dbClient = await database.getNewClient();
     const migratedMigrations = await migrationRunner({
-      ...req.defaultMigrationOptions,
+      ...defaultMigrationOptions,
+      dbClient,
       dryRun: false,
     });
 
@@ -52,6 +49,6 @@ async function postHandler(req, res) {
     }
     return res.status(200).json(migratedMigrations);
   } finally {
-    await req.dbClient?.end();
+    await dbClient?.end();
   }
 }
